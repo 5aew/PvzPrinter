@@ -1,0 +1,30 @@
+# === .NET / Visual Studio ===
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+.vs/
+
+# === NuGet ===
+*.nupkg
+packages/
+
+# === Logs & Runtime ===
+logs/
+*.log
+
+# === User-specific config ===
+settings.json
+
+# === OS files ===
+Thumbs.db
+.DS_Store
+
+# === IDE ===
+.idea/
+*.swp
+*~

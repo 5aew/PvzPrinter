@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="PvzPrinter.Core/PvzPrinter.Core.csproj" />
+  <Project Path="PvzPrinter.Desktop/PvzPrinter.Desktop.csproj" />
+  <Project Path="TestProject1/TestProject1.csproj" />
+</Solution>
