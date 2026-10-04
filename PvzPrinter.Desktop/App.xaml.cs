@@ -5,13 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 using PvzPrinter.Core.Configuration;
 using PvzPrinter.Core.Logging;
 using PvzPrinter.Core.Printing;
+using Application = System.Windows.Application;
 
 namespace PvzPrinter.Desktop;
-
-using Application = System.Windows.Application;  // WPF Application
-//using NotifyIcon = System.Windows.Forms.NotifyIcon;
-//using ContextMenuStrip = System.Windows.Forms.ContextMenuStrip;
-//using ToolStripSeparator = System.Windows.Forms.ToolStripSeparator;
 
 public partial class App : Application
 {
