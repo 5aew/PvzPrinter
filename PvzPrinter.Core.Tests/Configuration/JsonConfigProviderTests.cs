@@ -23,7 +23,7 @@ public class JsonConfigProviderTests : IDisposable
         _loggerMock = new Mock<ILogger>();
         _provider = new JsonConfigProvider(_loggerMock.Object);
 
-        // ВАЖНО: Удаляем settings.json из папки сборки перед каждым тестом
+        //Удаляем settings.json из папки сборки перед каждым тестом
         var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
         if (File.Exists(configPath))
             File.Delete(configPath);
