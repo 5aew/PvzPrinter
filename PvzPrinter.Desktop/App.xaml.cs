@@ -8,10 +8,10 @@ using PvzPrinter.Core.Printing;
 
 namespace PvzPrinter.Desktop;
 
-using Application = System.Windows.Application;  // ← WPF Application
-using NotifyIcon = System.Windows.Forms.NotifyIcon;  // ← явное указание
-using ContextMenuStrip = System.Windows.Forms.ContextMenuStrip;
-using ToolStripSeparator = System.Windows.Forms.ToolStripSeparator;
+using Application = System.Windows.Application;  // WPF Application
+//using NotifyIcon = System.Windows.Forms.NotifyIcon;
+//using ContextMenuStrip = System.Windows.Forms.ContextMenuStrip;
+//using ToolStripSeparator = System.Windows.Forms.ToolStripSeparator;
 
 public partial class App : Application
 {
@@ -28,8 +28,51 @@ public partial class App : Application
         services.AddTransient<IPrinterService, LabelPrinter>();
         Services = services.BuildServiceProvider();
 
-        // Создаём ТОЛЬКО ОДНО окно
+        // Проверяем, запущены ли из автозагрузки
+        bool isAutoStart = e.Args.Contains("--autostart", StringComparer.OrdinalIgnoreCase);
+
+        // Регистрируем в автозагрузке (если ещё не зарегистрированы)
+        RegisterInAutoStart();
+
+        // Создаём окно
         var mainWindow = new MainWindow();
-        mainWindow.Show();
+
+        if (isAutoStart)
+        {
+            // При автозапуске: создаём трей-иконку, но НЕ показываем окно
+            mainWindow.Hide(); // Окно скрыто, но NotifyIcon уже создан в конструкторе
+        }
+        else
+        {
+            // При обычном запуске: показываем окно нормально
+            mainWindow.Show();
+        }
+    }
+
+    private static void RegisterInAutoStart()
+    {
+        const string keyName = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        const string appName = "PvzPrinter";
+
+        try
+        {
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(keyName, writable: true);
+            if (key == null) return;
+
+            var currentValue = key.GetValue(appName) as string;
+            var exePath = Environment.ProcessPath ?? "";
+
+            // Если уже зарегистрирован с правильным путём — ничего не делаем
+            if (currentValue != null && currentValue.Contains(exePath))
+                return;
+
+            // Регистрируем с флагом --autostart
+            key.SetValue(appName, $"\"{exePath}\" --autostart");
+        }
+        catch
+        {
+            // Тихий fail: если нет прав на реестр — просто пропускаем
+            // Логгер здесь недоступен (DI ещё не собран), поэтому молча игнорируем
+        }
     }
 }
