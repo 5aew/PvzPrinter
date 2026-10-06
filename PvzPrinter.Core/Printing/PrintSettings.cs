@@ -32,6 +32,10 @@ public class PrintSettings
     public int FontSize { get; set; } = 14;
 
     /// <summary>
+    /// Размер шрифта для даты/времени (pt). По умолчанию 7.
+    public int TimestampFontSize { get; set; } = 7;
+
+    /// <summary>
     /// Печатать дату и время внизу этикетки. По умолчанию включено.
     public bool PrintTimestamp { get; set; } = true;
 

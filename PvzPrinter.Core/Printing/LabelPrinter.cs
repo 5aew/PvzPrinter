@@ -85,7 +85,7 @@ public class LabelPrinter : IPrinterService
         if (settings.PrintTimestamp)
         {
             var timestamp = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
-            using var smallFont = new Font(settings.FontFamily, Math.Max(6, settings.FontSize / 3), FontStyle.Regular);
+            using var smallFont = new Font(settings.FontFamily, Math.Max(4, settings.TimestampFontSize), FontStyle.Regular);
             var tsSize = g.MeasureString(timestamp, smallFont);
 
             var tsX = (e.PageBounds.Width - tsSize.Width) / 2;
