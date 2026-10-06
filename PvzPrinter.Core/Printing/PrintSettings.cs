@@ -31,6 +31,10 @@ public class PrintSettings
     /// <summary>Размер шрифта</summary>
     public int FontSize { get; set; } = 14;
 
+    /// <summary>
+    /// Печатать дату и время внизу этикетки. По умолчанию включено.
+    public bool PrintTimestamp { get; set; } = true;
+
     /// <summary>Тип фона</summary>
     public BackgroundType BackgroundType { get; set; } = BackgroundType.Default;
 

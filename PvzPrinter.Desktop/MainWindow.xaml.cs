@@ -27,6 +27,7 @@ public partial class MainWindow : Window
 
         var contextMenu = new ContextMenuStrip();
         contextMenu.Items.Add("Открыть", null, (_, _) => ShowWindow());
+        contextMenu.Items.Add("Настройки", null, (_, _) => OpenSettings());
         contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add("Выход", null, (_, _) => ExitApplication());
 
@@ -46,6 +47,11 @@ public partial class MainWindow : Window
         Show();
         WindowState = WindowState.Normal;
         Activate();
+    }
+    private void OpenSettings()
+    {
+        var settingsWindow = new SettingsWindow();
+        settingsWindow.ShowDialog(); // Модальное окно
     }
 
     private void ExitApplication()

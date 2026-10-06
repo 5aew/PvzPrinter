@@ -69,10 +69,10 @@ public class LabelPrinter : IPrinterService
     {
         var g = e.Graphics!;
 
-        // 1. Рисуем фон (если есть)
+        // 1. Фон
         DrawBackground(g, e.PageBounds, settings);
 
-        // 2. Рисуем текст ячейки по центру
+        // 2. Номер ячейки по центру
         using var font = new Font(settings.FontFamily, settings.FontSize, FontStyle.Bold);
         var textSize = g.MeasureString(cellCode, font);
 
@@ -80,6 +80,19 @@ public class LabelPrinter : IPrinterService
         var y = (e.PageBounds.Height - textSize.Height) / 2;
 
         g.DrawString(cellCode, font, Brushes.Black, x, y);
+
+        // 3. Дата и время внизу (если включено)
+        if (settings.PrintTimestamp)
+        {
+            var timestamp = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+            using var smallFont = new Font(settings.FontFamily, Math.Max(6, settings.FontSize / 3), FontStyle.Regular);
+            var tsSize = g.MeasureString(timestamp, smallFont);
+
+            var tsX = (e.PageBounds.Width - tsSize.Width) / 2;
+            var tsY = e.PageBounds.Height - tsSize.Height - 2; // 2px отступ снизу
+
+            g.DrawString(timestamp, smallFont, Brushes.Gray, tsX, tsY);
+        }
     }
 
     private void DrawBackground(Graphics g, Rectangle bounds, PrintSettings settings)
