@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 
 using Microsoft.Extensions.DependencyInjection;
-
+using PvzPrinter.Core.Communication;
 using PvzPrinter.Core.Configuration;
 using PvzPrinter.Core.Logging;
 using PvzPrinter.Core.Printing;
@@ -32,8 +32,28 @@ public partial class App : Application
             sp.GetRequiredService<ILogger>(),
             sp.GetRequiredService<ILabelRenderer>()
         ));
+        services.AddSingleton<IWebSocketServer, OzonWebSocketServer>();
 
         Services = services.BuildServiceProvider();
+
+        // Запускаем WebSocket-сервер
+        var wsServer = Services.GetRequiredService<IWebSocketServer>();
+        wsServer.Start();
+
+        // Подписываем на команды печати
+        var printer = Services.GetRequiredService<IPrinterService>();
+        wsServer.PrintRequested += async cmd =>
+        {
+            try
+            {
+                await printer.PrintLabelAsync(cmd.CellCode);
+            }
+            catch (Exception ex)
+            {
+                var logger = Services.GetRequiredService<ILogger>();
+                logger.Error($"Failed to print from WebSocket: {cmd.CellCode}", ex);
+            }
+        };
 
         // Проверяем, запущены ли из автозагрузки
         bool isAutoStart = e.Args.Contains("--autostart", StringComparer.OrdinalIgnoreCase);
@@ -81,5 +101,11 @@ public partial class App : Application
             // Тихий fail: если нет прав на реестр — просто пропускаем
             // Логгер здесь недоступен (DI ещё не собран), поэтому молча игнорируем
         }
+    }
+    protected override void OnExit(ExitEventArgs e)
+    {
+        var wsServer = Services.GetService<IWebSocketServer>();
+        wsServer?.Stop();
+        base.OnExit(e);
     }
 }
