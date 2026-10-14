@@ -1,8 +1,12 @@
-﻿using System.Drawing.Printing;
-using System.Windows;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using PvzPrinter.Core.Configuration;
 using PvzPrinter.Core.Logging;
+using PvzPrinter.Core.Printing;
+using System.Drawing.Printing;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using MessageBox = System.Windows.MessageBox; // ← Разрешаем конфликт
 
 namespace PvzPrinter.Desktop;
@@ -11,15 +15,33 @@ public partial class SettingsWindow : Window
 {
     private readonly IConfigProvider _configProvider;
     private readonly ILogger _logger;
+    private readonly ILabelRenderer _renderer;
 
     public SettingsWindow()
     {
         InitializeComponent();
 
+        // 1. СНАЧАЛА получаем все сервисы
         _configProvider = App.Services.GetRequiredService<IConfigProvider>();
         _logger = App.Services.GetRequiredService<ILogger>();
+        _renderer = App.Services.GetRequiredService<ILabelRenderer>();
 
+        // 2. ПОТОМ подписываемся на события
+        TxtWidth.TextChanged += (_, _) => UpdatePreview();
+        TxtHeight.TextChanged += (_, _) => UpdatePreview();
+        CmbFontFamily.SelectionChanged += (_, _) => UpdatePreview();
+        CmbFontFamily.AddHandler(System.Windows.Controls.Primitives.TextBoxBase.TextChangedEvent,
+            new System.Windows.Controls.TextChangedEventHandler((_, _) => UpdatePreview()));
+        TxtFontSize.TextChanged += (_, _) => UpdatePreview();
+        ChkPrintTimestamp.Checked += (_, _) => UpdatePreview();
+        ChkPrintTimestamp.Unchecked += (_, _) => UpdatePreview();
+        TxtTimestampFontSize.TextChanged += (_, _) => UpdatePreview();
+
+        // 3. Загружаем настройки (заполняет поля)
         LoadSettings();
+
+        // 4. И ТОЛЬКО ПОСЛЕ всего показываем первое превью
+        UpdatePreview();
     }
     /// <summary>
     /// Временный провайдер конфига для тестовой печати.
@@ -98,9 +120,11 @@ public partial class SettingsWindow : Window
 
             // Создаём временный принтер с тестовыми настройками
             var logger = App.Services.GetRequiredService<PvzPrinter.Core.Logging.ILogger>();
+            var renderer = App.Services.GetRequiredService<PvzPrinter.Core.Printing.ILabelRenderer>();
             var printer = new PvzPrinter.Core.Printing.LabelPrinter(
                 new TestConfigProvider(testSettings),
-                logger
+                logger,
+                renderer  // ← Добавлен третий аргумент
             );
 
             await printer.PrintLabelAsync("ТЕСТ-001");
@@ -112,7 +136,6 @@ public partial class SettingsWindow : Window
             MessageBox.Show($"Ошибка печати: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-
     private void OnSaveClick(object sender, RoutedEventArgs e)
     {
         try
@@ -152,6 +175,49 @@ public partial class SettingsWindow : Window
         {
             _logger.Error("Failed to save settings", ex);
             MessageBox.Show("Ошибка сохранения настроек", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    private void UpdatePreview()
+    {
+        try
+        {
+            if (!double.TryParse(TxtWidth.Text, out var w)) w = 30;
+            if (!double.TryParse(TxtHeight.Text, out var h)) h = 20;
+            if (!int.TryParse(TxtFontSize.Text, out var fs)) fs = 14;
+            if (!int.TryParse(TxtTimestampFontSize.Text, out var tsFs)) tsFs = 7;
+
+            var previewSettings = new Core.Printing.PrintSettings
+            {
+                LabelWidthMm = w,
+                LabelHeightMm = h,
+                FontFamily = string.IsNullOrWhiteSpace(CmbFontFamily.Text) ? "Arial" : CmbFontFamily.Text.Trim(),
+                FontSize = fs,
+                PrintTimestamp = ChkPrintTimestamp.IsChecked ?? true,
+                TimestampFontSize = tsFs
+            };
+
+            // Старый битмап нужно задиспозить
+            var oldSource = ImgPreview.Source as System.Windows.Media.Imaging.BitmapImage;
+
+            using var bitmap = _renderer.Render("ТЕСТ-001", previewSettings);
+
+            // Конвертируем System.Drawing.Bitmap → WPF ImageSource
+            var bmpImage = new System.Windows.Media.Imaging.BitmapImage();
+            using var ms = new MemoryStream();
+            bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            bmpImage.BeginInit();
+            bmpImage.StreamSource = ms;
+            bmpImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            bmpImage.EndInit();
+            bmpImage.Freeze(); // Важно для потокобезопасности
+
+            ImgPreview.Source = bmpImage;
+        }
+        catch
+        {
+            // Тихий fail: если превью не получилось — просто не обновляем
         }
     }
 }

@@ -1,13 +1,36 @@
 ﻿<Window x:Class="PvzPrinter.Desktop.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Настройки PvzPrinter" Height="480" Width="450"
+        Title="Настройки PvzPrinter" Height="550" Width="450"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
-    <StackPanel Margin="15">
-        <TextBlock Text="Принтер:" FontWeight="Bold"/>
-        <ComboBox x:Name="CmbPrinters" Margin="0,5,0,15"/>
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Принтер -->
+            <RowDefinition Height="Auto"/>
+            <!-- Размеры -->
+            <RowDefinition Height="Auto"/>
+            <!-- Шрифт -->
+            <RowDefinition Height="Auto"/>
+            <!-- Размер шрифта -->
+            <RowDefinition Height="Auto"/>
+            <!-- Превью -->
+            <RowDefinition Height="Auto"/>
+            <!-- Timestamp -->
+            <RowDefinition Height="*"/>
+            <!-- Пустое пространство -->
+            <RowDefinition Height="Auto"/>
+            <!-- Кнопки -->
+        </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal">
+        <!-- 0: Принтер -->
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Принтер:" FontWeight="Bold"/>
+            <ComboBox x:Name="CmbPrinters" Margin="0,5,0,15"/>
+        </StackPanel>
+
+        <!-- 1: Размеры -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
             <StackPanel Margin="0,0,15,0">
                 <TextBlock Text="Ширина (мм):" FontWeight="Bold"/>
                 <TextBox x:Name="TxtWidth" Width="80" HorizontalAlignment="Left" Margin="0,5,0,0"/>
@@ -18,25 +41,39 @@
             </StackPanel>
         </StackPanel>
 
-        <TextBlock Text="Шрифт:" FontWeight="Bold" Margin="0,15,0,0"/>
-        <ComboBox x:Name="CmbFontFamily" Margin="0,5,0,0" IsEditable="True"/>
-
-        <TextBlock Text="Размер шрифта:" FontWeight="Bold" Margin="0,15,0,0"/>
-        <TextBox x:Name="TxtFontSize" Margin="0,5,0,0"/>
-
-        <CheckBox x:Name="ChkPrintTimestamp" Content="Печатать дату и время на этикетке" 
-          Margin="0,20,0,0"/>
-
-        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-            <TextBlock Text="Размер шрифта даты/времени:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox x:Name="TxtTimestampFontSize" Width="60" VerticalAlignment="Center"/>
+        <!-- 2: Шрифт -->
+        <StackPanel Grid.Row="2" Margin="0,15,0,0">
+            <TextBlock Text="Шрифт:" FontWeight="Bold"/>
+            <ComboBox x:Name="CmbFontFamily" Margin="0,5,0,0" IsEditable="True"/>
         </StackPanel>
-        <Button Content="🖨️ Тестовая печать" Width="150" Height="35" 
-        Margin="0,20,0,0" HorizontalAlignment="Right"
-        Click="OnTestPrintClick"/>
 
-        <Button Content="Сохранить" Width="120" Height="35" 
-        Margin="0,10,0,0" HorizontalAlignment="Right"
-        Click="OnSaveClick"/>
-    </StackPanel>
+        <!-- 3: Размер шрифта -->
+        <StackPanel Grid.Row="3" Margin="0,15,0,0">
+            <TextBlock Text="Размер шрифта:" FontWeight="Bold"/>
+            <TextBox x:Name="TxtFontSize" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <!-- 4: Превью -->
+        <Border Grid.Row="4" BorderBrush="Gray" BorderThickness="1" 
+                Margin="0,15,0,0" HorizontalAlignment="Center" Background="White">
+            <Image x:Name="ImgPreview" Width="200" Height="140" Stretch="Uniform"/>
+        </Border>
+
+        <!-- 5: Timestamp -->
+        <StackPanel Grid.Row="5" Margin="0,15,0,0">
+            <CheckBox x:Name="ChkPrintTimestamp" Content="Печатать дату и время на этикетке"/>
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock Text="Размер шрифта даты/времени:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBox x:Name="TxtTimestampFontSize" Width="60" VerticalAlignment="Center"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- 7: Кнопки (всегда внизу!) -->
+        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="🖨️ Тестовая печать" Width="150" Height="35" 
+                    Margin="0,0,10,0" Click="OnTestPrintClick"/>
+            <Button Content="Сохранить" Width="120" Height="35" 
+                    Click="OnSaveClick"/>
+        </StackPanel>
+    </Grid>
 </Window>

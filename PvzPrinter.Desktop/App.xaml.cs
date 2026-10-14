@@ -9,19 +9,30 @@ using Application = System.Windows.Application;
 
 namespace PvzPrinter.Desktop;
 
+
 public partial class App : Application
 {
+
     public static IServiceProvider Services { get; private set; } = null!;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-
+        
         // DI контейнер
         var services = new ServiceCollection();
+
         services.AddSingleton<ILogger, FileLogger>();
         services.AddSingleton<IConfigProvider, JsonConfigProvider>();
-        services.AddTransient<IPrinterService, LabelPrinter>();
+        services.AddSingleton<ILabelRenderer, LabelRenderer>();
+
+        services.AddTransient<IPrinterService>(sp =>
+        new LabelPrinter(
+            sp.GetRequiredService<IConfigProvider>(),
+            sp.GetRequiredService<ILogger>(),
+            sp.GetRequiredService<ILabelRenderer>()
+        ));
+
         Services = services.BuildServiceProvider();
 
         // Проверяем, запущены ли из автозагрузки

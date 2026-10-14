@@ -1,30 +1,23 @@
-﻿using System.Drawing;
-using System.Drawing.Printing;
-
+﻿using System.Drawing.Printing;
 using PvzPrinter.Core.Configuration;
 using PvzPrinter.Core.Logging;
 
-// Явно указываем, что Font и Image — из System.Drawing, а не из Mime
-using Font = System.Drawing.Font;
-using Image = System.Drawing.Image;
-
-using static System.Net.Mime.MediaTypeNames;
-
 namespace PvzPrinter.Core.Printing;
 
-/// <summary>
-/// Реализация печати этикеток через System.Drawing.Printing.
-/// Берёт настройки из IConfigProvider, логирует через ILogger.
-/// </summary>
 public class LabelPrinter : IPrinterService
 {
     private readonly IConfigProvider _configProvider;
     private readonly ILogger _logger;
+    private readonly ILabelRenderer _renderer;
 
-    public LabelPrinter(IConfigProvider configProvider, ILogger logger)
+    // Храним текущий код ячейки для обработчика PrintPage
+    private string _currentCellCode = "";
+
+    public LabelPrinter(IConfigProvider configProvider, ILogger logger, ILabelRenderer renderer)
     {
         _configProvider = configProvider;
         _logger = logger;
+        _renderer = renderer;
     }
 
     public Task PrintLabelAsync(string cellCode, CancellationToken ct = default)
@@ -37,99 +30,51 @@ public class LabelPrinter : IPrinterService
 
                 if (string.IsNullOrWhiteSpace(settings.PrinterName))
                 {
-                    _logger.Warn("Printer name is empty, skipping print");
-                    return;
+                    _logger.Error("Printer name is not configured");
+                    throw new InvalidOperationException("Принтер не выбран в настройках");
                 }
 
-                var doc = new PrintDocument();
-                doc.PrinterSettings.PrinterName = settings.PrinterName;
+                _currentCellCode = cellCode;
 
-                // Устанавливаем размер бумаги в мм → дюймы (1 inch = 25.4 mm)
-                doc.DefaultPageSettings.PaperSize = new PaperSize(
-                    "CustomLabel",
-                    MmToHundredthsInch(settings.LabelWidthMm),
-                    MmToHundredthsInch(settings.LabelHeightMm)
+                using var printDoc = new PrintDocument();
+                printDoc.PrinterSettings.PrinterName = settings.PrinterName;
+
+                // Устанавливаем размер бумаги из настроек
+                printDoc.DefaultPageSettings.PaperSize = new PaperSize(
+                    "Custom",
+                    MmToHundredthsOfInch(settings.LabelWidthMm),
+                    MmToHundredthsOfInch(settings.LabelHeightMm)
                 );
-                doc.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
 
-                // Рисуем содержимое этикетки
-                doc.PrintPage += (sender, e) => DrawLabel(e!, cellCode, settings);
+                printDoc.PrintPage += OnPrintPage;
 
-                doc.Print();
-                _logger.Info($"Printed label for cell '{cellCode}' on '{settings.PrinterName}'");
+                _logger.Info($"Printing label '{cellCode}' to '{settings.PrinterName}'");
+                printDoc.Print();
             }
             catch (Exception ex)
             {
-                _logger.Error($"Failed to print label for cell '{cellCode}'", ex);
+                _logger.Error($"Failed to print label '{cellCode}'", ex);
+                throw;
             }
         }, ct);
     }
 
-    private void DrawLabel(PrintPageEventArgs e, string cellCode, PrintSettings settings)
+    private void OnPrintPage(object sender, PrintPageEventArgs e)
     {
-        var g = e.Graphics!;
+        var settings = _configProvider.GetSettings();
 
-        // 1. Фон
-        DrawBackground(g, e.PageBounds, settings);
+        // Рендерим этикетку в Bitmap через новый сервис
+        using var bitmap = _renderer.Render(_currentCellCode, settings);
 
-        // 2. Номер ячейки по центру
-        using var font = new Font(settings.FontFamily, settings.FontSize, FontStyle.Bold);
-        var textSize = g.MeasureString(cellCode, font);
-
-        var x = (e.PageBounds.Width - textSize.Width) / 2;
-        var y = (e.PageBounds.Height - textSize.Height) / 2;
-
-        g.DrawString(cellCode, font, Brushes.Black, x, y);
-
-        // 3. Дата и время внизу (если включено)
-        if (settings.PrintTimestamp)
-        {
-            var timestamp = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
-            using var smallFont = new Font(settings.FontFamily, Math.Max(4, settings.TimestampFontSize), FontStyle.Regular);
-            var tsSize = g.MeasureString(timestamp, smallFont);
-
-            var tsX = (e.PageBounds.Width - tsSize.Width) / 2;
-            var tsY = e.PageBounds.Height - tsSize.Height - 2; // 2px отступ снизу
-
-            g.DrawString(timestamp, smallFont, Brushes.Gray, tsX, tsY);
-        }
-    }
-
-    private void DrawBackground(Graphics g, Rectangle bounds, PrintSettings settings)
-    {
-        try
-        {
-            string? imagePath = null;
-
-            if (settings.BackgroundType == BackgroundType.Default)
-            {
-                var defaultPath = Path.Combine(
-                    _configProvider.GetDefaultBackgroundsPath(),
-                    settings.BackgroundImage
-                );
-                if (File.Exists(defaultPath)) imagePath = defaultPath;
-            }
-            else if (settings.BackgroundType == BackgroundType.Custom)
-            {
-                if (File.Exists(settings.BackgroundImage))
-                    imagePath = settings.BackgroundImage;
-            }
-
-            if (imagePath != null)
-            {
-                using var bgImage = Image.FromFile(imagePath);
-                g.DrawImage(bgImage, bounds);
-            }
-        }
-        catch (Exception ex)
-        {
-            // Тихий fallback: если фон не загрузился — печатаем без него
-            _logger.Warn($"Failed to load background image, printing without it: {ex.Message}");
-        }
+        // Рисуем готовый Bitmap на странице принтера
+        e.Graphics?.DrawImage(bitmap, e.PageBounds);
     }
 
     /// <summary>
-    /// Перевод миллиметров в сотые доли дюйма (единица PaperSize)
+    /// Переводит миллиметры в сотые доли дюйма (единица PaperSize).
     /// </summary>
-    private static int MmToHundredthsInch(double mm) => (int)(mm / 25.4 * 100);
+    private static int MmToHundredthsOfInch(double mm)
+    {
+        return (int)Math.Round(mm / 25.4 * 100);
+    }
 }
