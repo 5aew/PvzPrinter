@@ -24,7 +24,8 @@ public partial class App : Application
 
         services.AddSingleton<ILogger, FileLogger>();
         services.AddSingleton<IConfigProvider, JsonConfigProvider>();
-        services.AddSingleton<ILabelRenderer, LabelRenderer>();
+        services.AddSingleton<ILabelRenderer>(sp =>
+        new LabelRenderer(sp.GetRequiredService<ILogger>()));
 
         services.AddTransient<IPrinterService>(sp =>
         new LabelPrinter(

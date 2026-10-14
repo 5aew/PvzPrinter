@@ -1,13 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+
 using PvzPrinter.Core.Configuration;
 using PvzPrinter.Core.Logging;
 using PvzPrinter.Core.Printing;
+
 using System.Drawing.Printing;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using MessageBox = System.Windows.MessageBox; // ← Разрешаем конфликт
+
+using MessageBox = System.Windows.MessageBox;
 
 namespace PvzPrinter.Desktop;
 
@@ -36,6 +38,8 @@ public partial class SettingsWindow : Window
         ChkPrintTimestamp.Checked += (_, _) => UpdatePreview();
         ChkPrintTimestamp.Unchecked += (_, _) => UpdatePreview();
         TxtTimestampFontSize.TextChanged += (_, _) => UpdatePreview();
+        TxtHorizontalOffset.TextChanged += (_, _) => UpdatePreview();
+        TxtVerticalOffset.TextChanged += (_, _) => UpdatePreview();
 
         // 3. Загружаем настройки (заполняет поля)
         LoadSettings();
@@ -43,21 +47,23 @@ public partial class SettingsWindow : Window
         // 4. И ТОЛЬКО ПОСЛЕ всего показываем первое превью
         UpdatePreview();
     }
+
     /// <summary>
     /// Временный провайдер конфига для тестовой печати.
     /// Возвращает настройки из полей формы, а не из файла.
     /// </summary>
-    internal class TestConfigProvider : PvzPrinter.Core.Configuration.IConfigProvider
+    internal class TestConfigProvider : IConfigProvider
     {
-        private readonly PvzPrinter.Core.Printing.PrintSettings _settings;
+        private readonly PrintSettings _settings;
 
-        public TestConfigProvider(PvzPrinter.Core.Printing.PrintSettings settings) => _settings = settings;
+        public TestConfigProvider(PrintSettings settings) => _settings = settings;
 
-        public PvzPrinter.Core.Printing.PrintSettings GetSettings() => _settings;
-        public void SaveSettings(PvzPrinter.Core.Printing.PrintSettings settings) { /* no-op */ }
+        public PrintSettings GetSettings() => _settings;
+        public void SaveSettings(PrintSettings settings) { /* no-op */ }
         public string GetDefaultBackgroundsPath() =>
-            System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "backgrounds", "default");
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "backgrounds", "default");
     }
+
     private void LoadSettings()
     {
         try
@@ -77,10 +83,12 @@ public partial class SettingsWindow : Window
             CmbPrinters.SelectedItem = settings.PrinterName;
             TxtWidth.Text = settings.LabelWidthMm.ToString();
             TxtHeight.Text = settings.LabelHeightMm.ToString();
-            CmbFontFamily.SelectedItem = settings.FontFamily; // ← Было TxtFontFamily
+            CmbFontFamily.SelectedItem = settings.FontFamily;
+            TxtFontSize.Text = settings.FontSize.ToString();
             ChkPrintTimestamp.IsChecked = settings.PrintTimestamp;
             TxtTimestampFontSize.Text = settings.TimestampFontSize.ToString();
-            TxtFontSize.Text = settings.FontSize.ToString();
+            TxtHorizontalOffset.Text = settings.HorizontalOffsetMm.ToString();
+            TxtVerticalOffset.Text = settings.VerticalOffsetMm.ToString();
         }
         catch (Exception ex)
         {
@@ -88,11 +96,11 @@ public partial class SettingsWindow : Window
             MessageBox.Show("Ошибка загрузки настроек. Проверьте лог.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
     private async void OnTestPrintClick(object sender, RoutedEventArgs e)
     {
         try
         {
-            // Читаем текущие значения из полей (НЕ из файла!)
             if (!double.TryParse(TxtWidth.Text, out var width) || !double.TryParse(TxtHeight.Text, out var height))
             {
                 MessageBox.Show("Некорректные размеры этикетки", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -105,7 +113,7 @@ public partial class SettingsWindow : Window
                 return;
             }
 
-            var testSettings = new Core.Printing.PrintSettings
+            var testSettings = new PrintSettings
             {
                 PrinterName = CmbPrinters.SelectedItem as string ?? "",
                 LabelWidthMm = width,
@@ -114,17 +122,18 @@ public partial class SettingsWindow : Window
                 FontSize = fontSize,
                 PrintTimestamp = ChkPrintTimestamp.IsChecked ?? true,
                 TimestampFontSize = int.TryParse(TxtTimestampFontSize.Text, out var tsSize) ? tsSize : 7,
-                BackgroundType = Core.Printing.BackgroundType.Default,
+                HorizontalOffsetMm = float.TryParse(TxtHorizontalOffset.Text, out var ho) ? ho : 0,
+                VerticalOffsetMm = float.TryParse(TxtVerticalOffset.Text, out var vo) ? vo : 0,
+                BackgroundType = BackgroundType.Default,
                 BackgroundImage = "white.png"
             };
 
-            // Создаём временный принтер с тестовыми настройками
-            var logger = App.Services.GetRequiredService<PvzPrinter.Core.Logging.ILogger>();
-            var renderer = App.Services.GetRequiredService<PvzPrinter.Core.Printing.ILabelRenderer>();
-            var printer = new PvzPrinter.Core.Printing.LabelPrinter(
+            var logger = App.Services.GetRequiredService<ILogger>();
+            var renderer = App.Services.GetRequiredService<ILabelRenderer>();
+            var printer = new LabelPrinter(
                 new TestConfigProvider(testSettings),
                 logger,
-                renderer  // ← Добавлен третий аргумент
+                renderer
             );
 
             await printer.PrintLabelAsync("ТЕСТ-001");
@@ -136,6 +145,7 @@ public partial class SettingsWindow : Window
             MessageBox.Show($"Ошибка печати: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
     private void OnSaveClick(object sender, RoutedEventArgs e)
     {
         try
@@ -152,16 +162,18 @@ public partial class SettingsWindow : Window
                 return;
             }
 
-            var settings = new Core.Printing.PrintSettings
+            var settings = new PrintSettings
             {
                 PrinterName = CmbPrinters.SelectedItem as string ?? "",
                 LabelWidthMm = width,
                 LabelHeightMm = height,
-                FontFamily = CmbFontFamily.Text.Trim(), // ← Было TxtFontFamily
+                FontFamily = CmbFontFamily.Text.Trim(),
                 FontSize = fontSize,
-                TimestampFontSize = int.TryParse(TxtTimestampFontSize.Text, out var tsSize) ? tsSize : 7,
                 PrintTimestamp = ChkPrintTimestamp.IsChecked ?? true,
-                BackgroundType = Core.Printing.BackgroundType.Default,
+                TimestampFontSize = int.TryParse(TxtTimestampFontSize.Text, out var tsSize) ? tsSize : 7,
+                HorizontalOffsetMm = float.TryParse(TxtHorizontalOffset.Text, out var ho) ? ho : 0,
+                VerticalOffsetMm = float.TryParse(TxtVerticalOffset.Text, out var vo) ? vo : 0,
+                BackgroundType = BackgroundType.Default,
                 BackgroundImage = "white.png"
             };
 
@@ -177,31 +189,34 @@ public partial class SettingsWindow : Window
             MessageBox.Show("Ошибка сохранения настроек", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
     private void UpdatePreview()
     {
         try
         {
+            if (_renderer == null) return;
+
             if (!double.TryParse(TxtWidth.Text, out var w)) w = 30;
             if (!double.TryParse(TxtHeight.Text, out var h)) h = 20;
             if (!int.TryParse(TxtFontSize.Text, out var fs)) fs = 14;
             if (!int.TryParse(TxtTimestampFontSize.Text, out var tsFs)) tsFs = 7;
+            if (!float.TryParse(TxtHorizontalOffset.Text, out var hOff)) hOff = 0;
+            if (!float.TryParse(TxtVerticalOffset.Text, out var vOff)) vOff = 0;
 
-            var previewSettings = new Core.Printing.PrintSettings
+            var previewSettings = new PrintSettings
             {
                 LabelWidthMm = w,
                 LabelHeightMm = h,
                 FontFamily = string.IsNullOrWhiteSpace(CmbFontFamily.Text) ? "Arial" : CmbFontFamily.Text.Trim(),
                 FontSize = fs,
                 PrintTimestamp = ChkPrintTimestamp.IsChecked ?? true,
-                TimestampFontSize = tsFs
+                TimestampFontSize = tsFs,
+                HorizontalOffsetMm = hOff,
+                VerticalOffsetMm = vOff
             };
-
-            // Старый битмап нужно задиспозить
-            var oldSource = ImgPreview.Source as System.Windows.Media.Imaging.BitmapImage;
 
             using var bitmap = _renderer.Render("ТЕСТ-001", previewSettings);
 
-            // Конвертируем System.Drawing.Bitmap → WPF ImageSource
             var bmpImage = new System.Windows.Media.Imaging.BitmapImage();
             using var ms = new MemoryStream();
             bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
@@ -211,7 +226,7 @@ public partial class SettingsWindow : Window
             bmpImage.StreamSource = ms;
             bmpImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
             bmpImage.EndInit();
-            bmpImage.Freeze(); // Важно для потокобезопасности
+            bmpImage.Freeze();
 
             ImgPreview.Source = bmpImage;
         }

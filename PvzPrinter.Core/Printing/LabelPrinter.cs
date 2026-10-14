@@ -1,4 +1,6 @@
-﻿using System.Drawing.Printing;
+﻿using System.Drawing;
+using System.Drawing.Printing;
+
 using PvzPrinter.Core.Configuration;
 using PvzPrinter.Core.Logging;
 
@@ -62,12 +64,14 @@ public class LabelPrinter : IPrinterService
     private void OnPrintPage(object sender, PrintPageEventArgs e)
     {
         var settings = _configProvider.GetSettings();
-
-        // Рендерим этикетку в Bitmap через новый сервис
         using var bitmap = _renderer.Render(_currentCellCode, settings);
 
-        // Рисуем готовый Bitmap на странице принтера
-        e.Graphics?.DrawImage(bitmap, e.PageBounds);
+        if (e.Graphics == null) return;
+
+        e.Graphics.PageUnit = GraphicsUnit.Pixel;
+
+        // Смещения уже учтены внутри Render() — просто кладём Bitmap в начало координат
+        e.Graphics.DrawImage(bitmap, 0, 0);
     }
 
     /// <summary>
@@ -76,5 +80,10 @@ public class LabelPrinter : IPrinterService
     private static int MmToHundredthsOfInch(double mm)
     {
         return (int)Math.Round(mm / 25.4 * 100);
+    }
+    private static int MmToPixels(double mm)
+    {
+        const float dpi = 203f;
+        return (int)Math.Round(mm * dpi / 25.4);
     }
 }

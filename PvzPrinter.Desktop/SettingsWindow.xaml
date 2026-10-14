@@ -1,26 +1,28 @@
 ﻿<Window x:Class="PvzPrinter.Desktop.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Настройки PvzPrinter" Height="550" Width="450"
+        Title="Настройки PvzPrinter" Height="660" Width="450"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Принтер -->
+            <!-- 0: Принтер -->
             <RowDefinition Height="Auto"/>
-            <!-- Размеры -->
+            <!-- 1: Размеры -->
             <RowDefinition Height="Auto"/>
-            <!-- Шрифт -->
+            <!-- 2: Смещение печати -->
             <RowDefinition Height="Auto"/>
-            <!-- Размер шрифта -->
+            <!-- 3: Шрифт -->
             <RowDefinition Height="Auto"/>
-            <!-- Превью -->
+            <!-- 4: Размер шрифта -->
             <RowDefinition Height="Auto"/>
-            <!-- Timestamp -->
+            <!-- 5: Превью -->
+            <RowDefinition Height="Auto"/>
+            <!-- 6: Timestamp -->
             <RowDefinition Height="*"/>
-            <!-- Пустое пространство -->
+            <!-- 7: Пустое пространство -->
             <RowDefinition Height="Auto"/>
-            <!-- Кнопки -->
+            <!-- 8: Кнопки -->
         </Grid.RowDefinitions>
 
         <!-- 0: Принтер -->
@@ -41,26 +43,36 @@
             </StackPanel>
         </StackPanel>
 
-        <!-- 2: Шрифт -->
+        <!-- 2: Смещение печати (НОВОЕ) -->
         <StackPanel Grid.Row="2" Margin="0,15,0,0">
+            <TextBlock Text="Смещение по горизонтали (мм):" FontWeight="Bold"/>
+            <TextBox x:Name="TxtHorizontalOffset" Width="80" HorizontalAlignment="Left" Margin="0,5,0,0" Text="0"/>
+            <TextBlock Text="Смещение по вертикали (мм):" FontWeight="Bold" Margin="0,10,0,0"/>
+            <TextBox x:Name="TxtVerticalOffset" Width="80" HorizontalAlignment="Left" Margin="0,5,0,0" Text="0"/>
+            <TextBlock Text="Отрицательное = вверх/влево, положительное = вниз/вправо" 
+               FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
+        </StackPanel>
+
+        <!-- 3: Шрифт -->
+        <StackPanel Grid.Row="3" Margin="0,15,0,0">
             <TextBlock Text="Шрифт:" FontWeight="Bold"/>
             <ComboBox x:Name="CmbFontFamily" Margin="0,5,0,0" IsEditable="True"/>
         </StackPanel>
 
-        <!-- 3: Размер шрифта -->
-        <StackPanel Grid.Row="3" Margin="0,15,0,0">
+        <!-- 4: Размер шрифта -->
+        <StackPanel Grid.Row="4" Margin="0,15,0,0">
             <TextBlock Text="Размер шрифта:" FontWeight="Bold"/>
             <TextBox x:Name="TxtFontSize" Margin="0,5,0,0"/>
         </StackPanel>
 
-        <!-- 4: Превью -->
-        <Border Grid.Row="4" BorderBrush="Gray" BorderThickness="1" 
+        <!-- 5: Превью -->
+        <Border Grid.Row="5" BorderBrush="Gray" BorderThickness="1" 
                 Margin="0,15,0,0" HorizontalAlignment="Center" Background="White">
             <Image x:Name="ImgPreview" Width="200" Height="140" Stretch="Uniform"/>
         </Border>
 
-        <!-- 5: Timestamp -->
-        <StackPanel Grid.Row="5" Margin="0,15,0,0">
+        <!-- 6: Timestamp -->
+        <StackPanel Grid.Row="6" Margin="0,15,0,0">
             <CheckBox x:Name="ChkPrintTimestamp" Content="Печатать дату и время на этикетке"/>
             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                 <TextBlock Text="Размер шрифта даты/времени:" VerticalAlignment="Center" Margin="0,0,10,0"/>
@@ -68,8 +80,8 @@
             </StackPanel>
         </StackPanel>
 
-        <!-- 7: Кнопки (всегда внизу!) -->
-        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right">
+        <!-- 8: Кнопки (всегда внизу!) -->
+        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="🖨️ Тестовая печать" Width="150" Height="35" 
                     Margin="0,0,10,0" Click="OnTestPrintClick"/>
             <Button Content="Сохранить" Width="120" Height="35" 

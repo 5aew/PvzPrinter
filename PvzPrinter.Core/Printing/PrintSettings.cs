@@ -16,6 +16,9 @@ public enum BackgroundType
 /// </summary>
 public class PrintSettings
 {
+    public float VerticalOffsetMm { get; set; } = 0;
+    public float HorizontalOffsetMm { get; set; } = 0;
+
     /// <summary>Имя принтера в системе</summary>
     public string PrinterName { get; set; } = string.Empty;
 
