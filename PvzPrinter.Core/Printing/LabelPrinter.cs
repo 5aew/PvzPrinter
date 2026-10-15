@@ -15,11 +15,18 @@ public class LabelPrinter : IPrinterService
     // Храним текущий код ячейки для обработчика PrintPage
     private string _currentCellCode = "";
 
-    public LabelPrinter(IConfigProvider configProvider, ILogger logger, ILabelRenderer renderer)
+    private readonly TwoLevelLabelCache _cache;
+
+    public LabelPrinter(
+        IConfigProvider configProvider,
+        ILogger logger,
+        ILabelRenderer renderer,
+        TwoLevelLabelCache cache)  // ← НОВОЕ
     {
         _configProvider = configProvider;
         _logger = logger;
         _renderer = renderer;
+        _cache = cache;  // ← НОВОЕ
     }
 
     public Task PrintLabelAsync(string cellCode, CancellationToken ct = default)
@@ -64,13 +71,13 @@ public class LabelPrinter : IPrinterService
     private void OnPrintPage(object sender, PrintPageEventArgs e)
     {
         var settings = _configProvider.GetSettings();
-        using var bitmap = _renderer.Render(_currentCellCode, settings);
+
+        // Используем кэш вместо прямого рендеринга
+        using var bitmap = _cache.GetOrRender(_currentCellCode, settings);
 
         if (e.Graphics == null) return;
 
         e.Graphics.PageUnit = GraphicsUnit.Pixel;
-
-        // Смещения уже учтены внутри Render() — просто кладём Bitmap в начало координат
         e.Graphics.DrawImage(bitmap, 0, 0);
     }
 

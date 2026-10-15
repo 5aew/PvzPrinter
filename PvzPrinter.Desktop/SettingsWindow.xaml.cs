@@ -130,10 +130,12 @@ public partial class SettingsWindow : Window
 
             var logger = App.Services.GetRequiredService<ILogger>();
             var renderer = App.Services.GetRequiredService<ILabelRenderer>();
+            var cache = App.Services.GetRequiredService<TwoLevelLabelCache>();
             var printer = new LabelPrinter(
                 new TestConfigProvider(testSettings),
                 logger,
-                renderer
+                renderer,
+                cache  // ← НОВОЕ
             );
 
             await printer.PrintLabelAsync("ТЕСТ-001");
@@ -178,6 +180,8 @@ public partial class SettingsWindow : Window
             };
 
             _configProvider.SaveSettings(settings);
+            var cache = App.Services.GetRequiredService<TwoLevelLabelCache>();
+            cache.Clear();
             _logger.Info("Settings saved via GUI");
 
             MessageBox.Show("Настройки сохранены!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);

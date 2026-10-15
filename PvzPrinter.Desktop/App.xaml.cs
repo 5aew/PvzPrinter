@@ -22,17 +22,19 @@ public partial class App : Application
         // DI контейнер
         var services = new ServiceCollection();
 
+        services.AddSingleton<TwoLevelLabelCache>();
         services.AddSingleton<ILogger, FileLogger>();
         services.AddSingleton<IConfigProvider, JsonConfigProvider>();
         services.AddSingleton<ILabelRenderer>(sp =>
         new LabelRenderer(sp.GetRequiredService<ILogger>()));
 
         services.AddTransient<IPrinterService>(sp =>
-        new LabelPrinter(
-            sp.GetRequiredService<IConfigProvider>(),
-            sp.GetRequiredService<ILogger>(),
-            sp.GetRequiredService<ILabelRenderer>()
-        ));
+    new LabelPrinter(
+        sp.GetRequiredService<IConfigProvider>(),
+        sp.GetRequiredService<ILogger>(),
+        sp.GetRequiredService<ILabelRenderer>(),
+        sp.GetRequiredService<TwoLevelLabelCache>()  // ← ДОБАВЛЕНО
+    ));
         services.AddSingleton<IWebSocketServer, OzonWebSocketServer>();
 
         Services = services.BuildServiceProvider();

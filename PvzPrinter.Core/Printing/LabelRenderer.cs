@@ -27,8 +27,8 @@ public class LabelRenderer : ILabelRenderer
         bitmap.SetResolution(Dpi, Dpi);
 
         using var g = Graphics.FromImage(bitmap);
-        g.SmoothingMode = SmoothingMode.AntiAlias;
-        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+        g.SmoothingMode = SmoothingMode.None;
+        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
 
         // Фон (белый по умолчанию)
         g.Clear(Color.White);
