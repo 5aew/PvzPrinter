@@ -1,32 +1,36 @@
 ﻿using System.Drawing;
 using System.Drawing.Printing;
-
 using PvzPrinter.Core.Configuration;
 using PvzPrinter.Core.Logging;
 
 namespace PvzPrinter.Core.Printing;
 
-public class LabelPrinter : IPrinterService
+public class LabelPrinter : IPrinterService, IDisposable
 {
     private readonly IConfigProvider _configProvider;
     private readonly ILogger _logger;
-    private readonly ILabelRenderer _renderer;
-
-    // Храним текущий код ячейки для обработчика PrintPage
-    private string _currentCellCode = "";
-
     private readonly TwoLevelLabelCache _cache;
+
+    // Переиспользуемый PrintDocument
+    private readonly PrintDocument _printDoc;
+    private string _currentCellCode = "";
+    private bool _disposed = false;
 
     public LabelPrinter(
         IConfigProvider configProvider,
         ILogger logger,
         ILabelRenderer renderer,
-        TwoLevelLabelCache cache)  // ← НОВОЕ
+        TwoLevelLabelCache cache)
     {
         _configProvider = configProvider;
         _logger = logger;
-        _renderer = renderer;
-        _cache = cache;  // ← НОВОЕ
+        _cache = cache;
+
+        // Создаём PrintDocument ОДИН раз
+        _printDoc = new PrintDocument();
+        _printDoc.PrintPage += OnPrintPage;
+
+        _logger.Info("LabelPrinter initialized with reusable PrintDocument");
     }
 
     public Task PrintLabelAsync(string cellCode, CancellationToken ct = default)
@@ -45,20 +49,16 @@ public class LabelPrinter : IPrinterService
 
                 _currentCellCode = cellCode;
 
-                using var printDoc = new PrintDocument();
-                printDoc.PrinterSettings.PrinterName = settings.PrinterName;
-
-                // Устанавливаем размер бумаги из настроек
-                printDoc.DefaultPageSettings.PaperSize = new PaperSize(
+                // Обновляем настройки принтера (быстрая операция)
+                _printDoc.PrinterSettings.PrinterName = settings.PrinterName;
+                _printDoc.DefaultPageSettings.PaperSize = new PaperSize(
                     "Custom",
                     MmToHundredthsOfInch(settings.LabelWidthMm),
                     MmToHundredthsOfInch(settings.LabelHeightMm)
                 );
 
-                printDoc.PrintPage += OnPrintPage;
-
                 _logger.Info($"Printing label '{cellCode}' to '{settings.PrinterName}'");
-                printDoc.Print();
+                _printDoc.Print();
             }
             catch (Exception ex)
             {
@@ -72,7 +72,7 @@ public class LabelPrinter : IPrinterService
     {
         var settings = _configProvider.GetSettings();
 
-        // Используем кэш вместо прямого рендеринга
+        // Кэш делает всю работу — рендеринг или выдача из памяти/диска
         using var bitmap = _cache.GetOrRender(_currentCellCode, settings);
 
         if (e.Graphics == null) return;
@@ -81,16 +81,17 @@ public class LabelPrinter : IPrinterService
         e.Graphics.DrawImage(bitmap, 0, 0);
     }
 
-    /// <summary>
-    /// Переводит миллиметры в сотые доли дюйма (единица PaperSize).
-    /// </summary>
     private static int MmToHundredthsOfInch(double mm)
     {
         return (int)Math.Round(mm / 25.4 * 100);
     }
-    private static int MmToPixels(double mm)
+
+    public void Dispose()
     {
-        const float dpi = 203f;
-        return (int)Math.Round(mm * dpi / 25.4);
+        if (!_disposed)
+        {
+            _printDoc.Dispose();
+            _disposed = true;
+        }
     }
 }

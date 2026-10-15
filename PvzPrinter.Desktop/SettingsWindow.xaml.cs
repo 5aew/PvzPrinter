@@ -128,19 +128,30 @@ public partial class SettingsWindow : Window
                 BackgroundImage = "white.png"
             };
 
-            var logger = App.Services.GetRequiredService<ILogger>();
-            var renderer = App.Services.GetRequiredService<ILabelRenderer>();
-            var cache = App.Services.GetRequiredService<TwoLevelLabelCache>();
-            var printer = new LabelPrinter(
-                new TestConfigProvider(testSettings),
-                logger,
-                renderer,
-                cache  // ← НОВОЕ
-            );
+            // Используем ЕДИНСТВЕННЫЙ принтер из DI + временный конфиг через TestConfigProvider
+            // Но так как LabelPrinter теперь Singleton с переиспользуемым PrintDocument,
+            // нам нужно просто обновить настройки перед печатью.
+            // Для тестовой печати используем тот же синглтон-принтер.
 
-            await printer.PrintLabelAsync("ТЕСТ-001");
+            // Временно подменяем конфиг для тестовой печати
+            var originalConfig = App.Services.GetRequiredService<IConfigProvider>();
+            var originalSettings = originalConfig.GetSettings();
 
-            MessageBox.Show("Этикетка отправлена на печать!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            // Сохраняем тестовые настройки временно
+            originalConfig.SaveSettings(testSettings);
+
+            try
+            {
+                var printer = App.Services.GetRequiredService<IPrinterService>();
+                await printer.PrintLabelAsync("ТЕСТ-001");
+
+                MessageBox.Show("Этикетка отправлена на печать!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            finally
+            {
+                // Восстанавливаем оригинальные настройки
+                originalConfig.SaveSettings(originalSettings);
+            }
         }
         catch (Exception ex)
         {

@@ -28,12 +28,12 @@ public partial class App : Application
         services.AddSingleton<ILabelRenderer>(sp =>
         new LabelRenderer(sp.GetRequiredService<ILogger>()));
 
-        services.AddTransient<IPrinterService>(sp =>
+        services.AddSingleton<IPrinterService>(sp =>
     new LabelPrinter(
         sp.GetRequiredService<IConfigProvider>(),
         sp.GetRequiredService<ILogger>(),
         sp.GetRequiredService<ILabelRenderer>(),
-        sp.GetRequiredService<TwoLevelLabelCache>()  // ← ДОБАВЛЕНО
+        sp.GetRequiredService<TwoLevelLabelCache>()
     ));
         services.AddSingleton<IWebSocketServer, OzonWebSocketServer>();
 
