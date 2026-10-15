@@ -25,8 +25,7 @@ public partial class MainWindow : Window
     {
         _notifyIcon = new NotifyIcon
         {
-            Icon = System.Drawing.Icon.ExtractAssociatedIcon(
-                Environment.ProcessPath ?? ""),
+            Icon = new System.Drawing.Icon("app.ico"),
             Text = "PvzPrinter",
             Visible = true
         };
