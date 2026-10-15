@@ -25,4 +25,5 @@
     <ProjectReference Include="..\PvzPrinter.Core\PvzPrinter.Core.csproj" />
   </ItemGroup>
 
+  
 </Project>
