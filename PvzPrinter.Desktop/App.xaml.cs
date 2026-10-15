@@ -35,6 +35,7 @@ public partial class App : Application
         sp.GetRequiredService<ILabelRenderer>(),
         sp.GetRequiredService<TwoLevelLabelCache>()
     ));
+        services.AddSingleton<PrintQueueService>();
         services.AddSingleton<IWebSocketServer, OzonWebSocketServer>();
 
         Services = services.BuildServiceProvider();
@@ -45,17 +46,10 @@ public partial class App : Application
 
         // Подписываем на команды печати
         var printer = Services.GetRequiredService<IPrinterService>();
-        wsServer.PrintRequested += async cmd =>
+        var printQueue = Services.GetRequiredService<PrintQueueService>();
+        wsServer.PrintRequested += cmd =>
         {
-            try
-            {
-                await printer.PrintLabelAsync(cmd.CellCode);
-            }
-            catch (Exception ex)
-            {
-                var logger = Services.GetRequiredService<ILogger>();
-                logger.Error($"Failed to print from WebSocket: {cmd.CellCode}", ex);
-            }
+            printQueue.Enqueue(cmd.CellCode);
         };
 
         // Проверяем, запущены ли из автозагрузки
@@ -107,8 +101,14 @@ public partial class App : Application
     }
     protected override void OnExit(ExitEventArgs e)
     {
+        // СНАЧАЛА останавливаем очередь (ждём завершения текущей печати)
+        var printQueue = Services.GetService<PrintQueueService>();
+        printQueue?.Dispose();
+
+        // ПОТОМ останавливаем WebSocket
         var wsServer = Services.GetService<IWebSocketServer>();
         wsServer?.Stop();
+
         base.OnExit(e);
     }
 }

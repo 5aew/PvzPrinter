@@ -35,37 +35,36 @@ public class LabelPrinter : IPrinterService, IDisposable
 
     public Task PrintLabelAsync(string cellCode, CancellationToken ct = default)
     {
-        return Task.Run(() =>
+        // Больше не нужен Task.Run — вызов идёт из выделенного потока очереди
+        try
         {
-            try
+            var settings = _configProvider.GetSettings();
+
+            if (string.IsNullOrWhiteSpace(settings.PrinterName))
             {
-                var settings = _configProvider.GetSettings();
-
-                if (string.IsNullOrWhiteSpace(settings.PrinterName))
-                {
-                    _logger.Error("Printer name is not configured");
-                    throw new InvalidOperationException("Принтер не выбран в настройках");
-                }
-
-                _currentCellCode = cellCode;
-
-                // Обновляем настройки принтера (быстрая операция)
-                _printDoc.PrinterSettings.PrinterName = settings.PrinterName;
-                _printDoc.DefaultPageSettings.PaperSize = new PaperSize(
-                    "Custom",
-                    MmToHundredthsOfInch(settings.LabelWidthMm),
-                    MmToHundredthsOfInch(settings.LabelHeightMm)
-                );
-
-                _logger.Info($"Printing label '{cellCode}' to '{settings.PrinterName}'");
-                _printDoc.Print();
+                _logger.Error("Printer name is not configured");
+                throw new InvalidOperationException("Принтер не выбран в настройках");
             }
-            catch (Exception ex)
-            {
-                _logger.Error($"Failed to print label '{cellCode}'", ex);
-                throw;
-            }
-        }, ct);
+
+            _currentCellCode = cellCode;
+
+            _printDoc.PrinterSettings.PrinterName = settings.PrinterName;
+            _printDoc.DefaultPageSettings.PaperSize = new PaperSize(
+                "Custom",
+                MmToHundredthsOfInch(settings.LabelWidthMm),
+                MmToHundredthsOfInch(settings.LabelHeightMm)
+            );
+
+            _logger.Info($"Printing label '{cellCode}' to '{settings.PrinterName}'");
+            _printDoc.Print();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Failed to print label '{cellCode}'", ex);
+            throw;
+        }
+
+        return Task.CompletedTask;
     }
 
     private void OnPrintPage(object sender, PrintPageEventArgs e)
