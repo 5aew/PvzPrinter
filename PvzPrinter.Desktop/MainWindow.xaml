@@ -25,12 +25,14 @@
 
         <!-- Кнопки -->
         <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center">
-            <Button Content="📄 Открыть лог" Width="200" Height="35" Margin="0,5"
-                    Click="OnOpenLogClick"/>
+            
+            
             <Button Content="🌐 Сайт разработчика" Width="200" Height="35" Margin="0,5"
                     Click="OnWebsiteClick"/>
             <Button Content="❤️ Отблагодарить" Width="200" Height="35" Margin="0,5"
                     Click="OnDonateClick"/>
+            <Button Content="📄 Открыть log-файл" Width="200" Height="35" Margin="0,5"
+                    Click="OnOpenLogClick"/>
         </StackPanel>
 
         <!-- Футер -->
