@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "PvzPrinter — Печать этикеток Ozon",
+  "name": "PvzPrinter — Автопечать этикеток Ozon",
   "version": "1.0.0",
-  "description": "Печать этикеток для ПВЗ Ozon через локальное приложение PvzPrinter",
+  "description": "Автоматическая печать этикеток при сканировании штрихкодов на странице приёмки Ozon ПВЗ. Работает совместно с локальным приложением PvzPrinter.",
   "permissions": ["storage"],
   "host_permissions": ["ws://localhost:8765/"],
   "background": {
