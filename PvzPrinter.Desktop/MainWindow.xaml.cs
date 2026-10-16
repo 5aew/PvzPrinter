@@ -180,7 +180,11 @@ public partial class MainWindow : Window
     #endregion
 
     #region Window Button Handlers
-
+    private void OnSettingsClick(object sender, RoutedEventArgs e)
+    {
+        var settingsWindow = new SettingsWindow();
+        settingsWindow.ShowDialog();
+    }
     private void OnOpenLogClick(object sender, RoutedEventArgs e)
     {
         try

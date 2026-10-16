@@ -1,8 +1,12 @@
 ﻿<Window x:Class="PvzPrinter.Desktop.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Настройки PvzPrinter" Height="660" Width="450"
-        WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+        Title="Настройки PvzPrinter" 
+        MinHeight="500" MinWidth="400"
+        Height="600" Width="450"
+        WindowStartupLocation="CenterScreen" 
+        ResizeMode="CanResize">
+
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -16,23 +20,23 @@
             <RowDefinition Height="Auto"/>
             <!-- 4: Размер шрифта -->
             <RowDefinition Height="Auto"/>
-            <!-- 5: Превью -->
-            <RowDefinition Height="Auto"/>
-            <!-- 6: Timestamp -->
+            <!-- 5: Предупреждение -->
             <RowDefinition Height="*"/>
-            <!-- 7: Пустое пространство -->
+            <!-- 6: Превью (растягивается) -->
+            <RowDefinition Height="Auto"/>
+            <!-- 7: Timestamp -->
             <RowDefinition Height="Auto"/>
             <!-- 8: Кнопки -->
         </Grid.RowDefinitions>
 
         <!-- 0: Принтер -->
-        <StackPanel Grid.Row="0">
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="Принтер:" FontWeight="Bold"/>
-            <ComboBox x:Name="CmbPrinters" Margin="0,5,0,15"/>
+            <ComboBox x:Name="CmbPrinters" Margin="0,5,0,0"/>
         </StackPanel>
 
         <!-- 1: Размеры -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal">
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
             <StackPanel Margin="0,0,15,0">
                 <TextBlock Text="Ширина (мм):" FontWeight="Bold"/>
                 <TextBox x:Name="TxtWidth" Width="80" HorizontalAlignment="Left" Margin="0,5,0,0"/>
@@ -43,48 +47,54 @@
             </StackPanel>
         </StackPanel>
 
-        <!-- 2: Смещение печати (НОВОЕ) -->
-        <StackPanel Grid.Row="2" Margin="0,15,0,0">
+        <!-- 2: Смещение печати -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
             <TextBlock Text="Смещение по горизонтали (мм):" FontWeight="Bold"/>
             <TextBox x:Name="TxtHorizontalOffset" Width="80" HorizontalAlignment="Left" Margin="0,5,0,0" Text="0"/>
-            <TextBlock Text="Смещение по вертикали (мм):" FontWeight="Bold" Margin="0,10,0,0"/>
+            <TextBlock Text="Смещение по вертикали (мм):" FontWeight="Bold" Margin="0,8,0,0"/>
             <TextBox x:Name="TxtVerticalOffset" Width="80" HorizontalAlignment="Left" Margin="0,5,0,0" Text="0"/>
             <TextBlock Text="Отрицательное = вверх/влево, положительное = вниз/вправо" 
-               FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
+                       FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
         </StackPanel>
 
         <!-- 3: Шрифт -->
-        <StackPanel Grid.Row="3" Margin="0,15,0,0">
+        <StackPanel Grid.Row="3" Margin="0,0,0,10">
             <TextBlock Text="Шрифт:" FontWeight="Bold"/>
             <ComboBox x:Name="CmbFontFamily" Margin="0,5,0,0" IsEditable="True"/>
         </StackPanel>
 
         <!-- 4: Размер шрифта -->
-        <StackPanel Grid.Row="4" Margin="0,15,0,0">
+        <StackPanel Grid.Row="4" Margin="0,0,0,10">
             <TextBlock Text="Размер шрифта:" FontWeight="Bold"/>
-            <TextBox x:Name="TxtFontSize" Margin="0,5,0,0"/>
+            <TextBox x:Name="TxtFontSize" Width="80" HorizontalAlignment="Left" Margin="0,5,0,0"/>
         </StackPanel>
 
-        <!-- 5: Превью -->
+        <!-- 5: Предупреждение о превью -->
+        <TextBlock Grid.Row="5" Margin="0,0,0,4" FontSize="12" Foreground="Gray" TextWrapping="Wrap">
+            Превью представляет <Bold>условное</Bold> расположение текста!
+        </TextBlock>
+
+        <!-- 6: Превью (адаптивное) -->
         <Border Grid.Row="5" BorderBrush="Gray" BorderThickness="1" 
-                Margin="0,15,0,0" HorizontalAlignment="Center" Background="White">
-            <Image x:Name="ImgPreview" Width="200" Height="140" Stretch="Uniform"/>
+                Margin="0,20,0,10" HorizontalAlignment="Center" 
+                Background="White" MaxWidth="200" Grid.RowSpan="2" Width="198">
+            <Image x:Name="ImgPreview" Stretch="Uniform" Margin="5"/>
         </Border>
 
-        <!-- 6: Timestamp -->
-        <StackPanel Grid.Row="6" Margin="0,15,0,0">
+        <!-- 7: Timestamp -->
+        <StackPanel Grid.Row="7" Margin="0,0,0,10">
             <CheckBox x:Name="ChkPrintTimestamp" Content="Печатать дату и время на этикетке"/>
-            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                 <TextBlock Text="Размер шрифта даты/времени:" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <TextBox x:Name="TxtTimestampFontSize" Width="60" VerticalAlignment="Center"/>
             </StackPanel>
         </StackPanel>
 
-        <!-- 8: Кнопки (всегда внизу!) -->
+        <!-- 8: Кнопки -->
         <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="🖨️ Тестовая печать" Width="150" Height="35" 
+            <Button Content="🖨️ Тестовая печать" Width="140" Height="32" 
                     Margin="0,0,10,0" Click="OnTestPrintClick"/>
-            <Button Content="Сохранить" Width="120" Height="35" 
+            <Button Content="Сохранить" Width="120" Height="32" 
                     Click="OnSaveClick"/>
         </StackPanel>
     </Grid>
